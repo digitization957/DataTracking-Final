@@ -40,16 +40,18 @@ namespace DataTracking
 
         [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public static string GetFiles(string departmentId, string categoryId, string subCategoryId, string typeId)
+        public static string GetFiles(string departmentId, string categoryId, string subCategoryId, string typeId, int level)
         {
             var data = new JArray();
 
             using (var conn = AppDb.Open())
             {
                 string sql = @"
-                    SELECT rf.FileId, rf.RecordId, rf.StoredName, rf.OriginalName, rf.FileExtension, rf.FileSizeBytes, rf.UploadedOn
+                    SELECT rf.FileId, rf.RecordId, rf.StoredName, rf.OriginalName, rf.FileExtension, rf.FileSizeBytes, rf.UploadedOn,
+                           s.SubjectText, r.Remark
                     FROM recordfiles rf
                     INNER JOIN records r ON r.RecordId = rf.RecordId
+                    INNER JOIN subjects s ON s.SubjectId = r.SubjectId
                     WHERE 1=1";
 
                 var cmd = new MySqlCommand();
@@ -76,6 +78,12 @@ namespace DataTracking
                     cmd.Parameters.AddWithValue("@type", typeId);
                 }
 
+                // Only match files that stop at exactly this level, so they don't also
+                // show up again under a deeper child node in the tree.
+                if (level == 1) sql += " AND r.CategoryId IS NULL";
+                else if (level == 2) sql += " AND r.SubCategoryId IS NULL";
+                else if (level == 3) sql += " AND r.TypeCategoryId IS NULL";
+
                 sql += " ORDER BY rf.UploadedOn DESC";
                 cmd.CommandText = sql;
 
@@ -90,7 +98,9 @@ namespace DataTracking
                             ["storedName"] = rdr["StoredName"].ToString(),
                             ["originalName"] = rdr["OriginalName"].ToString(),
                             ["extension"] = rdr["FileExtension"].ToString(),
-                            ["uploadedOn"] = Convert.ToDateTime(rdr["UploadedOn"]).ToString("dd-MMM-yyyy HH:mm")
+                            ["uploadedOn"] = Convert.ToDateTime(rdr["UploadedOn"]).ToString("dd-MMM-yyyy HH:mm"),
+                            ["subject"] = rdr["SubjectText"].ToString(),
+                            ["remark"] = rdr["Remark"] == DBNull.Value ? "" : rdr["Remark"].ToString()
                         });
                     }
                 }

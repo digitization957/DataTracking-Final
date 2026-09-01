@@ -614,6 +614,12 @@ a { color: var(--color-accent); }
 }
 .tree-toolbar button:hover { background: var(--color-paper-3); border-color: var(--color-rule-strong); }
 
+.tree-toggle-btn { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+.tree-toggle-icon { width: 13px; height: 13px; transform: rotate(-90deg); transition: transform var(--dur-short) var(--ease-out); }
+.tree-toggle-btn.is-on { color: var(--color-accent-ink); background: var(--color-accent); border-color: var(--color-accent); }
+.tree-toggle-btn.is-on:hover { background: var(--color-accent); border-color: var(--color-accent); filter: brightness(1.08); }
+.tree-toggle-btn.is-on .tree-toggle-icon { transform: rotate(0deg); }
+
 .tree-panel { padding: var(--space-xs) var(--space-sm); }
 
 .node-row {
@@ -664,7 +670,74 @@ a { color: var(--color-accent); }
 .tree-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); color: var(--color-ink-2); }
 .tree-file-meta { flex-shrink: 0; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
 .tree-file-loading, .tree-file-empty { font-size: var(--text-xs); color: var(--color-neutral); padding: var(--space-xs) 0 var(--space-xs) 26px; }
+.tree-file-list.is-empty { display: none; }
+
+.files-eyebrow {
+  border-top: 1px solid var(--color-rule); padding-top: var(--space-xs); margin-bottom: var(--space-2xs);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--color-neutral);
+}
 
 .tree-no-match { display: none; padding: var(--space-lg); text-align: center; color: var(--color-muted); font-size: var(--text-sm); }
+
+/* Hover popup: subject + remark for a file, shown on hover over a tree-file-row */
+.file-hover-pop {
+  position: fixed; z-index: var(--z-toast); width: 280px; max-width: calc(100vw - 24px);
+  background: var(--color-paper); border: 1px solid var(--color-rule); border-radius: var(--radius-lg);
+  box-shadow: 0 12px 28px -12px oklch(20% 0.02 254 / 0.28); padding: var(--space-sm) var(--space-md);
+  opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+}
+.file-hover-pop.show { opacity: 1; transform: translateY(0); }
+.fhp-head { display: flex; align-items: flex-start; gap: var(--space-2xs); }
+.fhp-head .ext-chip { margin-top: 2px; }
+.fhp-subject { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; color: var(--color-ink); line-height: 1.3; }
+.fhp-field { margin-top: var(--space-xs); }
+.fhp-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-neutral); margin-bottom: 2px; }
+.fhp-remark { font-size: var(--text-sm); color: var(--color-ink-2); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.fhp-remark.is-empty { color: var(--color-neutral); font-style: italic; }
+.fhp-meta { margin-top: var(--space-xs); padding-top: var(--space-xs); border-top: 1px solid var(--color-rule); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
 .tree-no-match.show { display: block; }
+
+/* ============ Mail viewer (parsed .msg) ============ */
+.mail-back-link { font-size: var(--text-sm); font-weight: 500; color: var(--color-muted); text-decoration: none; }
+.mail-back-link:hover { color: var(--color-ink); }
+
+.mail-loading, .mail-error { color: var(--color-muted); font-size: var(--text-sm); padding: var(--space-lg) 0; }
+.mail-error { color: var(--color-danger); }
+
+.crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-md); }
+.crumb b { color: var(--color-ink-2); font-weight: 600; }
+.crumb .sep { color: var(--color-rule-strong); }
+
+.mail-card { background: var(--color-paper); border: 1px solid var(--color-rule); border-radius: var(--radius-lg); overflow: hidden; }
+.mail-head { padding: var(--space-lg) var(--space-lg) var(--space-md); }
+.mail-head h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); letter-spacing: -0.02em; margin-bottom: var(--space-md); }
+
+.mail-meta { display: flex; flex-direction: column; gap: 6px; }
+.mail-meta-row { display: flex; gap: var(--space-sm); font-size: var(--text-sm); }
+.mail-meta-row .l { flex-shrink: 0; width: 48px; color: var(--color-neutral); }
+.mail-meta-row .v { color: var(--color-ink-2); }
+.mail-meta-row .v .name { font-weight: 600; color: var(--color-ink); }
+.mail-meta-row .v .addr { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-left: 4px; }
+.mail-meta-row.date .v { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
+
+.mail-body { padding: var(--space-lg); border-top: 1px solid var(--color-rule); font-size: var(--text-sm); color: var(--color-ink-2); white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+
+.mail-attachments { padding: var(--space-md) var(--space-lg) var(--space-lg); border-top: 1px solid var(--color-rule); }
+.mail-attachments .label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral); margin-bottom: var(--space-xs); display: block; }
+.attach-list { display: flex; flex-direction: column; gap: 4px; }
+.attach-row { display: flex; align-items: center; gap: var(--space-xs); padding: 8px var(--space-xs); border-radius: var(--radius-sm); text-decoration: none; }
+.attach-row:hover { background: var(--color-paper-3); }
+.attach-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); color: var(--color-ink-2); }
+.attach-size { flex-shrink: 0; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
+
+.safety-strip {
+  display: flex; align-items: flex-start; gap: var(--space-xs); margin-top: var(--space-md);
+  background: var(--color-success-soft); border: 1px solid var(--color-success); color: var(--color-ink-2);
+  border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); font-size: var(--text-xs);
+}
+.safety-strip svg { flex-shrink: 0; width: 14px; height: 14px; margin-top: 1px; color: var(--color-success); }
+
+.original-file { margin-top: var(--space-md); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
 

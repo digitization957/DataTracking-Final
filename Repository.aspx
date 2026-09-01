@@ -52,7 +52,7 @@
         <div class="app-content">
             <div class="panel-head" style="margin-bottom:var(--space-lg);">
                 <h2>Repository</h2>
-                <p class="lead">Expand a department to explore categories, sub-categories and types. Files appear inside each type.</p>
+                <p class="lead">Expand a <span id="lblLvl1lc">department</span> to explore <span id="lblLvl2lc">categories</span>, <span id="lblLvl3lc">sub-categories</span> and <span id="lblLvl4lc">types</span>. Files appear inside each <span id="lblLvl4lc2">type</span>.</p>
             </div>
 
             <div class="panel">
@@ -61,13 +61,27 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
                         <input type="text" id="txtTreeSearch" placeholder="Search departments, categories, sub-categories or types…" autocomplete="off" />
                     </div>
-                    <button type="button" id="btnExpandAll">Expand all</button>
-                    <button type="button" id="btnCollapseAll">Collapse all</button>
+                    <button type="button" id="btnToggleAll" class="tree-toggle-btn">
+                        <svg class="tree-toggle-icon" id="toggleAllIcon" viewBox="0 0 24 24"><use href="#ic-chevron"/></svg>
+                        <span id="toggleAllLabel">Expand all</span>
+                    </button>
                 </div>
 
                 <div class="tree-panel" id="treeRoot"></div>
                 <div class="tree-no-match" id="treeNoMatch">No matches.</div>
             </div>
+        </div>
+
+        <div class="file-hover-pop" id="fileHoverPop">
+            <div class="fhp-head">
+                <span class="ext-chip" id="fhpExt"></span>
+                <div class="fhp-subject" id="fhpSubject"></div>
+            </div>
+            <div class="fhp-field">
+                <span class="fhp-label">Remark</span>
+                <div class="fhp-remark" id="fhpRemark"></div>
+            </div>
+            <div class="fhp-meta">Uploaded <span id="fhpUploaded"></span></div>
         </div>
     </form>
 
@@ -82,8 +96,8 @@
         var categoryData = [];
 
         function esc(s) {
-            return String(s).replace(/[&<>]/g, function (c) {
-                return c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;";
+            return String(s).replace(/[&<>"]/g, function (c) {
+                return c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&quot;";
             });
         }
 
@@ -103,11 +117,16 @@
         }
 
         function fileRowHTML(file) {
-            var url = "FileHandler.ashx?recordId=" + encodeURIComponent(file.recordId) +
-                "&file=" + encodeURIComponent(file.storedName);
             var ext = (file.extension || "").replace(".", "");
+            var handler = ext.toLowerCase() === "msg" ? "MsgViewer.aspx" : "FileHandler.ashx";
+            var url = handler + "?recordId=" + encodeURIComponent(file.recordId) +
+                "&file=" + encodeURIComponent(file.storedName);
 
-            return '<a class="tree-file-row" href="' + url + '" target="_blank">' +
+            return '<a class="tree-file-row" href="' + url + '" target="_blank"' +
+                ' data-subject="' + esc(file.subject || "") + '"' +
+                ' data-remark="' + esc(file.remark || "") + '"' +
+                ' data-uploaded="' + esc(file.uploadedOn || "") + '"' +
+                ' data-ext="' + esc(ext) + '">' +
                 '<span class="ext-chip ' + extClass(ext) + '">' + esc(ext || "file") + '</span>' +
                 '<span class="tree-file-name">' + esc(file.originalName) + '</span>' +
                 '<span class="tree-file-meta">' + esc(file.uploadedOn) + '</span>' +
@@ -134,17 +153,10 @@
 
         function buildNode(item, domIdPrefix) {
             var domId = domIdPrefix + "-" + item.id;
-            var isTypeLevel = item.level === 4;
-            var childHTML;
-            var count = "";
-
-            if (isTypeLevel) {
-                childHTML = '<div class="tree-file-list" data-loaded="0"><div class="tree-file-loading">Loading files…</div></div>';
-            } else {
-                var kids = childrenOf(item.id);
-                count = '<span class="node-count">' + kids.length + '</span>';
-                childHTML = kids.map(function (k) { return buildNode(k, domId); }).join("");
-            }
+            var kids = childrenOf(item.id);
+            var count = kids.length ? '<span class="node-count">' + kids.length + '</span>' : "";
+            var kidsHTML = kids.map(function (k) { return buildNode(k, domId); }).join("");
+            var filesHTML = '<div class="tree-file-list" id="' + domId + '-files" data-loaded="0"><div class="tree-file-loading">Loading files…</div></div>';
 
             return '<div class="tree-node lvl-' + item.level + '" data-name="' + esc(item.name.toLowerCase()) + '">' +
                 '<button type="button" class="node-row" aria-expanded="false" aria-controls="' + domId + '-kids" data-id="' + item.id + '" data-level="' + item.level + '">' +
@@ -152,7 +164,7 @@
                 '<svg class="folder-icon"><use href="#ic-folder"/></svg>' +
                 '<span class="node-name">' + esc(item.name) + '</span>' + count +
                 '</button>' +
-                '<div class="node-children" id="' + domId + '-kids"><div class="inner">' + childHTML + '</div></div>' +
+                '<div class="node-children" id="' + domId + '-kids"><div class="inner">' + kidsHTML + filesHTML + '</div></div>' +
                 '</div>';
         }
 
@@ -162,13 +174,14 @@
         }
 
         function loadFilesFor($row) {
-            var $kids = $("#" + $row.attr("aria-controls"));
-            var $box = $kids.find(".tree-file-list").first();
+            var domId = $row.attr("aria-controls").replace(/-kids$/, "");
+            var $box = $("#" + domId + "-files");
 
             if ($box.data("loaded") === 1) return;
             $box.data("loaded", 1);
 
             var chain = ancestorChain($row.data("id"));
+            chain.level = $row.data("level");
 
             $.ajax({
                 type: "POST",
@@ -181,13 +194,12 @@
                     $box.empty();
 
                     if (files.length === 0) {
-                        $box.append('<div class="tree-file-empty">No files.</div>');
+                        $box.addClass("is-empty");
                         return;
                     }
 
+                    $box.append('<div class="files-eyebrow">Files · ' + files.length + '</div>');
                     files.forEach(function (f) { $box.append(fileRowHTML(f)); });
-                    $row.find(".node-count").remove();
-                    $row.append('<span class="node-count">' + files.length + '</span>');
                 },
                 error: function () {
                     $box.html('<div class="tree-file-empty">Could not load files.</div>');
@@ -203,24 +215,28 @@
             $row.attr("aria-expanded", String(!open));
             $("#" + $row.attr("aria-controls")).toggleClass("is-open", !open);
 
-            if (!open && $row.data("level") === 4) {
+            if (!open) {
                 loadFilesFor($row);
             }
         });
 
-        $(document).on("click", "#btnExpandAll", function () {
+        function setToggleAllState(expanded) {
+            $("#toggleAllLabel").text(expanded ? "Collapse all" : "Expand all");
+            $("#btnToggleAll").toggleClass("is-on", expanded);
+        }
+
+        $(document).on("click", "#btnToggleAll", function () {
+            var expand = !$(this).hasClass("is-on");
+
             $(".node-row").each(function () {
                 var $row = $(this);
-                $row.attr("aria-expanded", "true");
-                $("#" + $row.attr("aria-controls")).addClass("is-open");
+                $row.attr("aria-expanded", String(expand));
+                $("#" + $row.attr("aria-controls")).toggleClass("is-open", expand);
 
-                if ($row.data("level") === 4) loadFilesFor($row);
+                if (expand) loadFilesFor($row);
             });
-        });
 
-        $(document).on("click", "#btnCollapseAll", function () {
-            $(".node-row").attr("aria-expanded", "false");
-            $(".node-children").removeClass("is-open");
+            setToggleAllState(expand);
         });
 
         $(document).on("input", "#txtTreeSearch", function () {
@@ -249,6 +265,79 @@
             $("#treeNoMatch").toggleClass("show", query.length > 0 && !anyVisible);
         });
 
+        var $fileHoverPop = null;
+        var hoverPopTimer = null;
+        var REMARK_PREVIEW_MAX = 160;
+
+        function truncate(text, max) {
+            text = text || "";
+            return text.length > max ? text.slice(0, max).trim() + "…" : text;
+        }
+
+        function positionHoverPop($row) {
+            var rect = $row[0].getBoundingClientRect();
+            var pop = $fileHoverPop[0];
+            var top = rect.bottom + 8;
+            var left = rect.left;
+
+            $fileHoverPop.css({ top: top + "px", left: left + "px", visibility: "hidden" }).addClass("show");
+            var popRect = pop.getBoundingClientRect();
+
+            if (popRect.right > window.innerWidth - 12) { left = Math.max(12, window.innerWidth - popRect.width - 12); }
+            if (popRect.bottom > window.innerHeight - 12) { top = rect.top - popRect.height - 8; }
+
+            $fileHoverPop.css({ top: top + "px", left: left + "px", visibility: "visible" });
+        }
+
+        $(document).on("mouseenter", ".tree-file-row", function () {
+            var $row = $(this);
+            clearTimeout(hoverPopTimer);
+
+            hoverPopTimer = setTimeout(function () {
+                var ext = ($row.data("ext") || "").toString();
+                $("#fhpExt").attr("class", "ext-chip " + extClass(ext)).text(ext || "file");
+                $("#fhpSubject").text($row.data("subject") || "(No subject)");
+                var remark = $row.data("remark");
+                $("#fhpRemark").text(remark ? truncate(remark, REMARK_PREVIEW_MAX) : "No remark added.").toggleClass("is-empty", !remark);
+                $("#fhpUploaded").text($row.data("uploaded") || "—");
+                positionHoverPop($row);
+            }, 220);
+        });
+
+        $(document).on("mouseleave", ".tree-file-row", function () {
+            clearTimeout(hoverPopTimer);
+            $fileHoverPop.removeClass("show");
+        });
+
+        function pluralize(s) {
+            s = s || "";
+            if (/[a-z]y$/i.test(s)) return s.slice(0, -1) + "ies";
+            if (/s$/i.test(s)) return s;
+            return s + "s";
+        }
+
+        function applyRepoLabels() {
+            $.ajax({
+                type: "POST", url: "Master.aspx/GetCategoryLevelNames",
+                data: "{}", contentType: "application/json; charset=utf-8", dataType: "json",
+                success: function (res) {
+                    var names = JSON.parse(res.d);
+                    var l1 = names[1] || "Department", l2 = names[2] || "Category",
+                        l3 = names[3] || "Sub-Category", l4 = names[4] || "Type";
+
+                    $("#lblLvl1lc").text(l1.toLowerCase());
+                    $("#lblLvl2lc").text(pluralize(l2).toLowerCase());
+                    $("#lblLvl3lc").text(pluralize(l3).toLowerCase());
+                    $("#lblLvl4lc").text(pluralize(l4).toLowerCase());
+                    $("#lblLvl4lc2").text(l4.toLowerCase());
+
+                    $("#txtTreeSearch").attr("placeholder",
+                        "Search " + pluralize(l1).toLowerCase() + ", " + pluralize(l2).toLowerCase() +
+                        ", " + pluralize(l3).toLowerCase() + " or " + pluralize(l4).toLowerCase() + "…");
+                }
+            });
+        }
+
         function loadCategories() {
             $.ajax({
                 type: "POST",
@@ -264,6 +353,7 @@
         }
 
         $(function () {
+            $fileHoverPop = $("#fileHoverPop");
             DTAuth.bindDropdown("#masterToggle", "#masterNav");
             DTAuth.bindDropdown("#userToggle", "#userNav");
             DTAuth.bindGlobalDropdownClose();
@@ -283,6 +373,7 @@
                 }
             });
 
+            applyRepoLabels();
             loadCategories();
         });
     </script>
