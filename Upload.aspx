@@ -59,56 +59,20 @@
                 <div class="panel">
                     <div class="grid-cols" style="margin-bottom:var(--space-md);">
                         <div class="field">
-                            <div class="field-label-row">
-                                <label id="lblLvl1">Department</label>
-                                <span class="inline-add-toggle" data-level="1">+ Add new</span>
-                            </div>
+                            <label id="lblLvl1">Department</label>
                             <select id="ddl1"><option value="">-- Select --</option></select>
-                            <div class="master-add-row inline-add-row" id="addRow1" style="display:none;">
-                                <input type="text" id="addInput1" maxlength="200" placeholder="New department" />
-                                <button type="button" class="btn btn-primary btn-sm" data-action="confirm" data-level="1">Add</button>
-                                <button type="button" class="btn btn-sm" data-action="cancel" data-level="1">Cancel</button>
-                            </div>
-                            <div class="field-hint is-error" id="addErr1" style="display:none;"></div>
                         </div>
                         <div class="field">
-                            <div class="field-label-row">
-                                <label id="lblLvl2">Category</label>
-                                <span class="inline-add-toggle is-disabled" data-level="2">+ Add new</span>
-                            </div>
+                            <label id="lblLvl2">Category</label>
                             <select id="ddl2" disabled><option value="">-- Select --</option></select>
-                            <div class="master-add-row inline-add-row" id="addRow2" style="display:none;">
-                                <input type="text" id="addInput2" maxlength="200" placeholder="New category" />
-                                <button type="button" class="btn btn-primary btn-sm" data-action="confirm" data-level="2">Add</button>
-                                <button type="button" class="btn btn-sm" data-action="cancel" data-level="2">Cancel</button>
-                            </div>
-                            <div class="field-hint is-error" id="addErr2" style="display:none;"></div>
                         </div>
                         <div class="field">
-                            <div class="field-label-row">
-                                <label id="lblLvl3">Sub-Category</label>
-                                <span class="inline-add-toggle is-disabled" data-level="3">+ Add new</span>
-                            </div>
+                            <label id="lblLvl3">Sub-Category</label>
                             <select id="ddl3" disabled><option value="">-- Select --</option></select>
-                            <div class="master-add-row inline-add-row" id="addRow3" style="display:none;">
-                                <input type="text" id="addInput3" maxlength="200" placeholder="New sub-category" />
-                                <button type="button" class="btn btn-primary btn-sm" data-action="confirm" data-level="3">Add</button>
-                                <button type="button" class="btn btn-sm" data-action="cancel" data-level="3">Cancel</button>
-                            </div>
-                            <div class="field-hint is-error" id="addErr3" style="display:none;"></div>
                         </div>
                         <div class="field">
-                            <div class="field-label-row">
-                                <label id="lblLvl4">Type</label>
-                                <span class="inline-add-toggle is-disabled" data-level="4">+ Add new</span>
-                            </div>
+                            <label id="lblLvl4">Type</label>
                             <select id="ddl4" disabled><option value="">-- Select --</option></select>
-                            <div class="master-add-row inline-add-row" id="addRow4" style="display:none;">
-                                <input type="text" id="addInput4" maxlength="200" placeholder="New type" />
-                                <button type="button" class="btn btn-primary btn-sm" data-action="confirm" data-level="4">Add</button>
-                                <button type="button" class="btn btn-sm" data-action="cancel" data-level="4">Cancel</button>
-                            </div>
-                            <div class="field-hint is-error" id="addErr4" style="display:none;"></div>
                         </div>
                     </div>
 
@@ -174,41 +138,6 @@
             return categoryData.filter(function (c) { return c.parentId === parentId; });
         }
 
-        function syncAddToggle(level, enabled) {
-            $(".inline-add-toggle[data-level='" + level + "']").toggleClass("is-disabled", !enabled);
-            $("#addRow" + level).hide();
-            $("#addInput" + level).val("");
-            $("#addErr" + level).hide();
-        }
-
-        function addCategoryInline(level) {
-            var input = $("#addInput" + level);
-            var name = $.trim(input.val());
-            var err = $("#addErr" + level).hide();
-            if (!name) { err.text("Enter a name.").show(); return; }
-
-            var parentId = level === 1 ? null : $("#ddl" + (level - 1)).val();
-            if (level > 1 && !parentId) { err.text("Select the level above first.").show(); return; }
-
-            $.ajax({
-                type: "POST", url: "Master.aspx/AddCategory",
-                data: JSON.stringify({ name: name, level: level, parentId: parentId }),
-                contentType: "application/json; charset=utf-8", dataType: "json",
-                success: function (res) {
-                    var r = JSON.parse(res.d);
-                    if (!r.success) { err.text(r.message || "Could not add.").show(); return; }
-                    categoryData.push(r.item);
-                    var sel = $("#ddl" + level);
-                    loadDropdown(sel, childrenOf(level === 1 ? null : parentId), "-- Select --");
-                    sel.prop("disabled", false).val(r.item.id).trigger("change");
-                    $("#addRow" + level).hide();
-                    input.val("");
-                    DTAuth.toast("\"" + name + "\" added.", "success");
-                },
-                error: function () { err.text("Could not add. Try again.").show(); }
-            });
-        }
-
         $(function () {
             DTAuth.bindDropdown("#masterToggle", "#masterNav");
             DTAuth.bindDropdown("#userToggle", "#userNav");
@@ -241,53 +170,24 @@
             $("#ddl1").on("change", function () {
                 var val = $(this).val();
                 $("#ddl3, #ddl4").prop("disabled", true).empty().append("<option value=''>-- Select --</option>");
-                syncAddToggle(3, false); syncAddToggle(4, false);
-                if (!val) { $("#ddl2").prop("disabled", true).empty().append("<option value=''>-- Select --</option>"); syncAddToggle(2, false); return; }
+                if (!val) { $("#ddl2").prop("disabled", true).empty().append("<option value=''>-- Select --</option>"); return; }
                 loadDropdown($("#ddl2"), childrenOf(val), "-- Select --");
                 $("#ddl2").prop("disabled", false);
-                syncAddToggle(2, true);
             });
 
             $("#ddl2").on("change", function () {
                 var val = $(this).val();
                 $("#ddl4").prop("disabled", true).empty().append("<option value=''>-- Select --</option>");
-                syncAddToggle(4, false);
-                if (!val) { $("#ddl3").prop("disabled", true).empty().append("<option value=''>-- Select --</option>"); syncAddToggle(3, false); return; }
+                if (!val) { $("#ddl3").prop("disabled", true).empty().append("<option value=''>-- Select --</option>"); return; }
                 loadDropdown($("#ddl3"), childrenOf(val), "-- Select --");
                 $("#ddl3").prop("disabled", false);
-                syncAddToggle(3, true);
             });
 
             $("#ddl3").on("change", function () {
                 var val = $(this).val();
-                if (!val) { $("#ddl4").prop("disabled", true).empty().append("<option value=''>-- Select --</option>"); syncAddToggle(4, false); return; }
+                if (!val) { $("#ddl4").prop("disabled", true).empty().append("<option value=''>-- Select --</option>"); return; }
                 loadDropdown($("#ddl4"), childrenOf(val), "-- Select --");
                 $("#ddl4").prop("disabled", false);
-                syncAddToggle(4, true);
-            });
-
-            $(".inline-add-toggle").on("click", function () {
-                if ($(this).hasClass("is-disabled")) return;
-                var level = $(this).data("level");
-                $("#addRow" + level).show();
-                $("#addInput" + level).trigger("focus");
-            });
-
-            $(".inline-add-row button[data-action='confirm']").on("click", function () {
-                addCategoryInline($(this).data("level"));
-            });
-
-            $(".inline-add-row button[data-action='cancel']").on("click", function () {
-                var level = $(this).data("level");
-                $("#addRow" + level).hide();
-                $("#addInput" + level).val("");
-                $("#addErr" + level).hide();
-            });
-
-            $(".inline-add-row input").on("keydown", function (e) {
-                var level = $(this).closest(".inline-add-row").find("button[data-action='confirm']").data("level");
-                if (e.key === "Enter") { e.preventDefault(); addCategoryInline(level); }
-                else if (e.key === "Escape") { $("#addRow" + level).hide(); $(this).val(""); $("#addErr" + level).hide(); }
             });
 
             var subjTimer;
