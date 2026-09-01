@@ -170,7 +170,7 @@
                 '<svg class="folder-icon"><use href="#ic-folder"/></svg>' +
                 '<span class="node-name">' + esc(item.name) + '</span>' + count +
                 '</button>' +
-                '<div class="node-children" id="' + domId + '-kids"><div class="inner">' + kidsHTML + filesHTML + '</div></div>' +
+                '<div class="node-children" id="' + domId + '-kids"><div class="inner">' + filesHTML + kidsHTML + '</div></div>' +
                 '</div>';
         }
 
