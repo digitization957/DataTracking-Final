@@ -90,11 +90,10 @@
                     '<div class="mail-body">' + esc(m.bodyText || "(No body)") + '</div>' +
                     (attachCount ? '<div class="mail-attachments"><span class="label">Attachments &middot; ' + attachCount + '</span><div class="attach-list">' + attachHTML + '</div></div>' : "") +
                 '</div>' +
-                '<div class="safety-strip">' +
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V7l8-4Z"/><path d="M9.5 12l1.8 1.8L15 9.8"/></svg>' +
-                    '<span>Parsed and shown as read-only text &mdash; no scripts, macros or embedded HTML from the original mail are executed.</span>' +
-                '</div>' +
-                '<div class="original-file"><span>Parsed from ' + esc(m.originalFileName) + '</span></div>';
+                '<div class="original-file">' +
+                    '<span>Parsed from ' + esc(m.originalFileName) + '</span>' +
+                    '<a href="FileHandler.ashx?recordId=' + encodeURIComponent(recordId) + '&file=' + encodeURIComponent(file) + '">Download original .msg</a>' +
+                '</div>';
 
             $("#mailRoot").html(html).show();
         }

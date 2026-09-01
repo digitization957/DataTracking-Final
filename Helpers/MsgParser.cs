@@ -36,7 +36,7 @@ namespace DataTracking.Helpers
                 foreach (var item in msg.Attachments)
                 {
                     var att = item as MsgReader.Outlook.Storage.Attachment;
-                    if (att == null || att.Hidden || att.IsInline) continue;
+                    if (att == null || att.Hidden) continue;
 
                     attachments.Add(new ParsedMsgAttachment
                     {
@@ -61,14 +61,14 @@ namespace DataTracking.Helpers
             }
         }
 
-        // Re-parses and returns the raw bytes of one non-hidden, non-inline attachment by its display index.
+        // Re-parses and returns the raw bytes of one non-hidden attachment by its display index.
         public static ParsedMsgAttachment GetAttachmentBytes(string filePath, int index, out byte[] data)
         {
             using (var msg = new MsgReader.Outlook.Storage.Message(filePath))
             {
                 var visible = msg.Attachments
                     .OfType<MsgReader.Outlook.Storage.Attachment>()
-                    .Where(a => !a.Hidden && !a.IsInline)
+                    .Where(a => !a.Hidden)
                     .ToList();
 
                 if (index < 0 || index >= visible.Count)

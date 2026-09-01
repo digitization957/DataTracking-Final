@@ -732,12 +732,10 @@ a { color: var(--color-accent); }
 .attach-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); color: var(--color-ink-2); }
 .attach-size { flex-shrink: 0; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
 
-.safety-strip {
-  display: flex; align-items: flex-start; gap: var(--space-xs); margin-top: var(--space-md);
-  background: var(--color-success-soft); border: 1px solid var(--color-success); color: var(--color-ink-2);
-  border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); font-size: var(--text-xs);
+.original-file {
+  margin-top: var(--space-md); display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted);
 }
-.safety-strip svg { flex-shrink: 0; width: 14px; height: 14px; margin-top: 1px; color: var(--color-success); }
-
-.original-file { margin-top: var(--space-md); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
+.original-file a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
+.original-file a:hover { text-decoration: underline; }
 
