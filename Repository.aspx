@@ -94,6 +94,7 @@
     <script src="Scripts/auth.js"></script>
     <script>
         var categoryData = [];
+        var currentAuth = null;
 
         function esc(s) {
             return String(s).replace(/[&<>"]/g, function (c) {
@@ -118,9 +119,14 @@
 
         function fileRowHTML(file) {
             var ext = (file.extension || "").replace(".", "");
-            var handler = ext.toLowerCase() === "msg" ? "MsgViewer.aspx" : "FileHandler.ashx";
+            var isMsg = ext.toLowerCase() === "msg";
+            var handler = isMsg ? "MsgViewer.aspx" : "FileHandler.ashx";
             var url = handler + "?recordId=" + encodeURIComponent(file.recordId) +
                 "&file=" + encodeURIComponent(file.storedName);
+
+            if (isMsg && currentAuth) {
+                url += "&token=" + encodeURIComponent(currentAuth.token) + "&role=" + encodeURIComponent(currentAuth.role);
+            }
 
             return '<a class="tree-file-row" href="' + url + '" target="_blank"' +
                 ' data-subject="' + esc(file.subject || "") + '"' +
@@ -360,6 +366,7 @@
 
             var auth = DTAuth.resolve();
             if (!auth) return;
+            currentAuth = auth;
 
             DTAuth.renderUserMenu(auth.token, auth.role, auth.token);
             $("#btnLogout").on("click", DTAuth.logout);

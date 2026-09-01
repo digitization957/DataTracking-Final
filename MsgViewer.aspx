@@ -14,7 +14,7 @@
     <form id="form1" runat="server">
         <div class="topbar">
             <div class="topbar-brand"><div class="topbar-mark">DT</div><span>Data Tracking</span></div>
-            <a class="mail-back-link" href="Repository.aspx">&larr; Back to Repository</a>
+            <a class="mail-back-link" id="mailBackLink" href="Repository.aspx">&larr; Back to Repository</a>
         </div>
 
         <div class="app-content" id="mailApp">
@@ -100,6 +100,12 @@
         }
 
         $(function () {
+            var auth = DTAuth.resolve();
+            if (!auth) return;
+
+            $("#mailBackLink").attr("href",
+                "Repository.aspx?token=" + encodeURIComponent(auth.token) + "&role=" + encodeURIComponent(auth.role));
+
             var params = new URLSearchParams(window.location.search);
             var recordId = params.get("recordId");
             var file = params.get("file");
