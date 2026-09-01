@@ -59,7 +59,7 @@
                 <div class="tree-toolbar">
                     <div class="tree-search">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-                        <input type="text" id="txtTreeSearch" placeholder="Search departments, categories, sub-categories or types…" autocomplete="off" />
+                        <input type="text" id="txtTreeSearch" placeholder="Search departments, categories, sub-categories, types or subject…" autocomplete="off" />
                     </div>
                     <button type="button" id="btnToggleAll" class="tree-toggle-btn">
                         <svg class="tree-toggle-icon" id="toggleAllIcon" viewBox="0 0 24 24"><use href="#ic-chevron"/></svg>
@@ -164,7 +164,7 @@
             var kidsHTML = kids.map(function (k) { return buildNode(k, domId); }).join("");
             var filesHTML = '<div class="tree-file-list" id="' + domId + '-files" data-loaded="0"><div class="tree-file-loading">Loading files…</div></div>';
 
-            return '<div class="tree-node lvl-' + item.level + '" data-name="' + esc(item.name.toLowerCase()) + '">' +
+            return '<div class="tree-node lvl-' + item.level + '" id="' + domId + '" data-name="' + esc(item.name.toLowerCase()) + '">' +
                 '<button type="button" class="node-row" aria-expanded="false" aria-controls="' + domId + '-kids" data-id="' + item.id + '" data-level="' + item.level + '">' +
                 '<svg class="twisty"><use href="#ic-chevron"/></svg>' +
                 '<svg class="folder-icon"><use href="#ic-folder"/></svg>' +
@@ -271,6 +271,60 @@
             $("#treeNoMatch").toggleClass("show", query.length > 0 && !anyVisible);
         });
 
+        function domIdChainFor(nodeId) {
+            var chain = [];
+            var cur = categoryData.find(function (c) { return String(c.id) === String(nodeId); });
+            while (cur) {
+                chain.unshift(cur.id);
+                cur = cur.parentId ? categoryData.find(function (c) { return String(c.id) === String(cur.parentId); }) : null;
+            }
+            return chain;
+        }
+
+        function forceRevealNode(nodeId) {
+            var chain = domIdChainFor(nodeId);
+            var domId = "t";
+
+            chain.forEach(function (id, i) {
+                domId += "-" + id;
+                var $node = $("#" + domId);
+                if (!$node.length) return;
+
+                $node.prop("hidden", false);
+                var $row = $node.children(".node-row");
+                var $kids = $node.children(".node-children");
+                $row.attr("aria-expanded", "true");
+                $kids.addClass("is-open");
+
+                if (i === chain.length - 1) loadFilesFor($row);
+            });
+        }
+
+        var subjectSearchTimer;
+        $(document).on("input", "#txtTreeSearch", function () {
+            clearTimeout(subjectSearchTimer);
+            var term = $.trim($(this).val());
+            if (term.length < 2) return;
+
+            subjectSearchTimer = setTimeout(function () {
+                $.ajax({
+                    type: "POST",
+                    url: "Repository.aspx/SearchBySubject",
+                    data: JSON.stringify({ term: term }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (res) {
+                        if ($.trim($("#txtTreeSearch").val()) !== term) return;
+                        var matches = JSON.parse(res.d);
+                        if (!matches.length) return;
+
+                        matches.forEach(function (m) { forceRevealNode(m.nodeId); });
+                        $("#treeNoMatch").removeClass("show");
+                    }
+                });
+            }, 250);
+        });
+
         var $fileHoverPop = null;
         var hoverPopTimer = null;
         var REMARK_PREVIEW_MAX = 160;
@@ -339,7 +393,7 @@
 
                     $("#txtTreeSearch").attr("placeholder",
                         "Search " + pluralize(l1).toLowerCase() + ", " + pluralize(l2).toLowerCase() +
-                        ", " + pluralize(l3).toLowerCase() + " or " + pluralize(l4).toLowerCase() + "…");
+                        ", " + pluralize(l3).toLowerCase() + ", " + pluralize(l4).toLowerCase() + " or subject…");
                 }
             });
         }

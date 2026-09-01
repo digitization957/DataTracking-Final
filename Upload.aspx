@@ -191,6 +191,20 @@
             });
 
             var subjTimer;
+            var suggestIndex = -1;
+
+            function getSuggestItems() { return $("#subjectSuggest div"); }
+
+            function setActiveSuggest(idx) {
+                var items = getSuggestItems();
+                items.removeClass("is-active");
+                if (idx >= 0 && idx < items.length) {
+                    items.eq(idx).addClass("is-active");
+                    items[idx].scrollIntoView({ block: "nearest" });
+                }
+                suggestIndex = idx;
+            }
+
             $("#txtSubject").on("input", function () {
                 clearTimeout(subjTimer);
                 var term = $(this).val();
@@ -202,6 +216,7 @@
                         success: function (res) {
                             var list = JSON.parse(res.d);
                             var box = $("#subjectSuggest").empty();
+                            suggestIndex = -1;
                             if (list.length === 0) { box.hide(); return; }
                             list.forEach(function (s) {
                                 var div = $("<div>").text(s.subject).on("click", function () {
@@ -215,6 +230,29 @@
                         }
                     });
                 }, 250);
+            });
+
+            $("#txtSubject").on("keydown", function (e) {
+                var box = $("#subjectSuggest");
+                if (!box.is(":visible")) return;
+                var items = getSuggestItems();
+                if (!items.length) return;
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setActiveSuggest(suggestIndex < items.length - 1 ? suggestIndex + 1 : 0);
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveSuggest(suggestIndex > 0 ? suggestIndex - 1 : items.length - 1);
+                } else if (e.key === "Enter") {
+                    if (suggestIndex >= 0) {
+                        e.preventDefault();
+                        items.eq(suggestIndex).trigger("click");
+                    }
+                } else if (e.key === "Escape") {
+                    box.hide();
+                    suggestIndex = -1;
+                }
             });
 
             $(document).on("click", function (e) {

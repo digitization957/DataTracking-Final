@@ -108,5 +108,43 @@ namespace DataTracking
 
             return JsonConvert.SerializeObject(data);
         }
+
+        // Finds files by subject text and returns the deepest category node each one lives under,
+        // so the tree can expand and reveal the matching path.
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public static string SearchBySubject(string term)
+        {
+            var data = new JArray();
+            term = (term ?? "").Trim();
+            if (term.Length < 2) return JsonConvert.SerializeObject(data);
+
+            using (var conn = AppDb.Open())
+            using (var cmd = new MySqlCommand(
+                @"SELECT DISTINCT r.DepartmentCategoryId, r.CategoryId, r.SubCategoryId, r.TypeCategoryId
+                  FROM Records r
+                  INNER JOIN Subjects s ON s.SubjectId = r.SubjectId
+                  WHERE s.SubjectText LIKE @term
+                  LIMIT 50", conn))
+            {
+                cmd.Parameters.AddWithValue("@term", "%" + term + "%");
+
+                using (var rdr = cmd.ExecuteReader())
+                {
+                    while (rdr.Read())
+                    {
+                        object nodeId = null;
+                        if (rdr["TypeCategoryId"] != DBNull.Value) nodeId = rdr["TypeCategoryId"];
+                        else if (rdr["SubCategoryId"] != DBNull.Value) nodeId = rdr["SubCategoryId"];
+                        else if (rdr["CategoryId"] != DBNull.Value) nodeId = rdr["CategoryId"];
+                        else if (rdr["DepartmentCategoryId"] != DBNull.Value) nodeId = rdr["DepartmentCategoryId"];
+
+                        if (nodeId != null) data.Add(new JObject { ["nodeId"] = nodeId.ToString() });
+                    }
+                }
+            }
+
+            return JsonConvert.SerializeObject(data);
+        }
     }
 }

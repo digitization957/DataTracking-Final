@@ -14,7 +14,6 @@
     <form id="form1" runat="server">
         <div class="topbar">
             <div class="topbar-brand"><div class="topbar-mark">DT</div><span>Data Tracking</span></div>
-            <a class="mail-back-link" id="mailBackLink" href="Repository.aspx">&larr; Back to Repository</a>
         </div>
 
         <div class="app-content" id="mailApp">
@@ -65,6 +64,11 @@
                 '</a>';
         }
 
+        function pillsFor(str) {
+            return (str || "").split(";").map(function (s) { return s.trim(); }).filter(Boolean)
+                .map(function (s) { return '<span class="mail-pill">' + esc(s) + '</span>'; }).join("");
+        }
+
         function renderMail(m, recordId, file) {
             var crumbHTML = (m.crumb || []).map(function (c) { return esc(c); }).join(' <span class="sep">&rsaquo;</span> ') +
                 ' <span class="sep">&rsaquo;</span> <b>' + esc(m.originalFileName) + '</b>';
@@ -82,13 +86,13 @@
                         '<h1>' + esc(m.subject || "(No subject)") + '</h1>' +
                         '<div class="mail-meta">' +
                             '<div class="mail-meta-row"><span class="l">From</span><span class="v">' + fromHTML + '</span></div>' +
-                            (m.to ? '<div class="mail-meta-row"><span class="l">To</span><span class="v">' + esc(m.to) + '</span></div>' : "") +
-                            (m.cc ? '<div class="mail-meta-row"><span class="l">Cc</span><span class="v">' + esc(m.cc) + '</span></div>' : "") +
+                            (m.to ? '<div class="mail-meta-row"><span class="l">To</span><div class="v mail-pill-wrap">' + pillsFor(m.to) + '</div></div>' : "") +
+                            (m.cc ? '<div class="mail-meta-row"><span class="l">Cc</span><div class="v mail-pill-wrap">' + pillsFor(m.cc) + '</div></div>' : "") +
                             '<div class="mail-meta-row date"><span class="l">Date</span><span class="v">' + esc(m.sentOn || "Unknown") + '</span></div>' +
                         '</div>' +
                     '</div>' +
-                    '<div class="mail-body">' + esc(m.bodyText || "(No body)") + '</div>' +
                     (attachCount ? '<div class="mail-attachments"><span class="label">Attachments &middot; ' + attachCount + '</span><div class="attach-list">' + attachHTML + '</div></div>' : "") +
+                    '<div class="mail-body">' + esc(m.bodyText || "(No body)") + '</div>' +
                 '</div>' +
                 '<div class="original-file">' +
                     '<span>Parsed from ' + esc(m.originalFileName) + '</span>' +
@@ -101,9 +105,6 @@
         $(function () {
             var auth = DTAuth.resolve();
             if (!auth) return;
-
-            $("#mailBackLink").attr("href",
-                "Repository.aspx?token=" + encodeURIComponent(auth.token) + "&role=" + encodeURIComponent(auth.role));
 
             var params = new URLSearchParams(window.location.search);
             var recordId = params.get("recordId");
